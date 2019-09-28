@@ -1,0 +1,177 @@
+https://www.atmarkit.co.jp/ait/articles/1501/16/news085.html
+「ローカルグループ ポリシー」エディターを開いて（「ファイル名を指定して実行」で「gpedit.msc」と入力する）、［コンピューターの構成］－［管理用テンプレート］－［システム］－［サーバー マネージャー］を開く。そして、「ログオン時にサーバー マネージャーを自動的に表示しない」を「有効」にする。
+
+レジストリでサーバーマネージャーの自動起動を抑止するには、次の値を1に設定する。
+
+項目 	内容
+キー 	※Windows Server 2008の場合
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ServerManager
+※Windows Server 2008 R2以降の場合
+HKEY_CURRENT_USER\SOFTWARE\Microsoft\ServerManager
+値の名前 	DoNotOpenServerManagerAtLogon
+型 	REG_DWORD
+値の内容 	0 もしくは未定義 → 自動起動する
+1 → 自動起動しない
+
+
+http://zokibayashi.hatenablog.com/entry/2015/03/29/012310
+
+1. リモート デスクトップ セッション ホストのインストール
+
+Add-WindowsFeature -Name RDS-RD-Server
+
+2. [リモート デスクトップ セッション ホスト] 役割サービスをインストール
+
+Add-WindowsFeature -Name Desktop-Experience
+
+3. [デスクトップ エクスペリエンス] をインストール
+
+Add-WindowsFeature -Name Desktop-Experience
+
+
+4. [ライセンス診断] ツールをインストールします。
+
+Add-WindowsFeature -Name RSAT-RDS-Licensing-Diagnosis-UI
+
+5. 再起動
+
+
+6. [リモート デスクトップ ライセンス] の役割サービスをインストール
+
+Add-WindowsFeature -Name RDS-Licensing
+
+
+7. [RD ライセンス マネージャー] をインストール
+
+Add-WindowsFeature -Name RDS-Licensing-UI
+
+
+
+8. [リモート デスクトップ ライセンス モード] を
+ChangeMode(2)は接続デバイス数モード、ChangeMode(4)は接続ユーザ数モードです。
+
+PS C:\Users\Administrator> (gwmi -Class Win32_TerminalServiceSetting -Namespace root\cimv2\TerminalServices).ChangeMode(4)
+
+
+9．[リモート デスクトップ ライセンス サーバー] の指定
+ここでは複数（2つ）のライセンスサーバーを指定しています
+
+PS C:\Users\Administrator> New-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\TermService\Parameters\LicenseServers" -Name SpecifiedLicenseServers -Value "localhost" -PropertyType MultiString
+
+
+10. [リモート デスクトップ ライセンス サーバー] の確認
+
+Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\TermService\Parameters\LicenseServers" -Name SpecifiedLicenseServers
+
+
+念のため、レジストリエディタでも確認してみる。
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters\LicenseServers
+
+
+http://www.tech-joy.work/article/463238688.html
+
+1.[役割の機能と追加]－[リモートデスクトップサービス]　で下記の2つを追加します。
+
+    [リモートデスクトップ　ライセンス]
+        ライセンスサーバ機能となります。別サーバとしてライセンスサーバが建っている場合は不要です
+    [リモートデスクトップ　セッションホスト]
+        ライセンスサーバの指定や確認に必要です。
+        
+        
+2.セッションホストのライセンスモードを指定します。
+　お使いのRDPライセンスに応じて指定してください。
+
+(Get-WmiObject -Class Win32_TerminalServiceSetting -Namespace root\cimv2\TerminalServices).ChangeMode(4)
+​
+
+    デバイスライセンス：ChangeMode(2)
+    ユーザーライセンス：ChangeMode(4)
+    
+3.ライセンスサーバを指定します。サーバの指定はvalueに記述します。
+
+New-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\TermService\Parameters\LicenseServers" -Name SpecifiedLicenseServers -Value "localhost" -PropertyType MultiString
+
+
+
+4.ライセンスサーバが正しく指定されているか確認します。
+
+> Get-ItemProperty “HKLM:\SYSTEM\CurrentControlSet\Services\TermService\Parameters\LicenseServers” -Name SpecifiedLicenseServers
+SpecifiedLicenseServers : {localhost}
+PSPath : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters\LicenseServers
+PSParentPath : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters
+PSChildName : LicenseServers
+PSDrive : HKLM
+PSProvider : Microsoft.PowerShell.Core\Registry
+
+
+
+https://qiita.com/st450/items/33fa7c0703de266a89a1
+
+ライセンスサーバー
+
+ライセンスサーバー側には、下記の機能を追加した。
+
+    リモートデスクトップサービス
+    リモートデスクトップセッションホスト
+    リモートデスクトップライセンス
+    リモートデスクトップ接続ブローカー
+
+リモートデスクトップサービス提供サーバー
+
+提供側サーバーには下記の機能を追加した。
+
+    リモートデスクトップサービス
+    リモートデスクトップセッションホスト
+    リモートデスクトップ接続ブローカー
+    リモートデスクトップWebアクセス
+
+
+追加ライセンスのインストールは、コマンドプロンプトで「RDライセンスマネージャー」を起動してライセンスを認証する。
+
+licmgr.exe
+
+ライセンスの認証は、「RDライセンスマネージャー」のサーバー名で右クリックして「ライセンスのインストール」を選択してインストールする。
+
+
+https://www.petenetlive.com/KB/Article/0001484
+
+
+PS C:\Users\administrator.PNL> Install-WindowsFeature Desktop-Experience
+
+You need to install it with the following command;
+dism /online /add-package /packagepath:”C:\Windows\servicing\Packages\Adobe-Flash-For-Windows-Package~31bf3856ad364e35~amd64~~10.0.14393.0.mum”
+
+
+https://www.rough-and-cheap.jp/windows/gpo_remote_desktop/
+
+
+https://www.projectgroup.info/documents/WindowsServer2012/W2012_0029.html
+
+リモートデスクトップ ライセンスモードを 構成する(ローカルグループポリシー)
+
+[コンピューターの構成] － [管理用テンプレート] － [Windows コンポーネント] － [リモート デスクトップ サービス] － [リモート デスクトップ セッション ホスト] － [ライセンス] と展開します。
+
+指定のリモート デスクトップ ライセンス サーバーを使用する」の項目をダブルクリックで開きます。
+「有効」を選択し、「使用するライセンスサーバー」の項目にライセンスサーバーのコンピューター名もしくはIPアドレスを指定します。
+自サーバーがライセンスサーバーの場合は「127.0.0.1」や「localhost」でもOKです。
+設定したら「OK」ボタンをクリックします。
+
+
+次にライセンスモードを設定します。
+「リモート デスクトップ ライセンス モードの設定」をダブルクリックして開きます。
+「有効」を選択し、「RD セッション ホスト サーバーのライセンス モードを指定する」の項目でライセンスのモードを選択します。
+選択したら「OK」ボタンをクリックします。
+
+
+「ファイル名を指定して実行」ダイアログが起動します。
+「control admintools」と入力し、「OK」をクリックします。
+control admintools
+コントロールパネルの管理ツールが起動します。
+「リモート デスクトップ サービス」フォルダを開きます。
+
+「RD ライセンス診断機能」をダブルクリックで起動します。
+「ライセンスモード」の欄で設定されたライセンスモードが正しいか確認します。
+
+
+
